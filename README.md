@@ -1,6 +1,6 @@
 # Toku
 
-Toku (which comes from 'Tokumei' in Japanese) is a gem originally designed to anonymize a production database in order to feed a staging database with similar properties.
+Toku (which comes from 'Tokumei' 匿名 in Japanese) is a gem originally designed to anonymize a database in order to feed a another database with same columns but with filtered row contents.
 
 ## Installation
 
@@ -20,9 +20,30 @@ Or install it yourself as:
 
 ## Usage
 
-`Toku::Anonymizer.new(<path_to_config_file>).run(source_db, destination_db)`
+```ruby
+Toku::Anonymizer.new(<path_to_config_file>).run(source_db, destination_db)
+```
+
+Users can define custom filters by implementing a `Toku::ColumnFilter` subclass like so:
+
+```ruby
+module Toku
+  class NewFilter < Toku::ColumnFilter
+    def initialize(**options)
+    end
+
+    def call(_)
+      _
+    end
+  end
+end
+```
+
+Which can be then referenced in the config file using the key of the mapping hash.
 
 ## Config file specification
+
+TODO
 
 ## Development
 

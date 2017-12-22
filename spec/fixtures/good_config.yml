@@ -1,0 +1,10 @@
+table_a:
+  columns:
+    id:
+      - none
+    first_name:
+      - faker_first_name
+    last_name:
+      - faker_last_name
+    email:
+      - faker_email

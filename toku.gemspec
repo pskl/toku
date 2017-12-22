@@ -6,12 +6,12 @@ require 'toku/version'
 Gem::Specification.new do |spec|
   spec.name          = "toku"
   spec.version       = Toku::VERSION
-  spec.authors       = ["Pascal Lamouric"]
-  spec.email         = ["pascal.lamouric@gmail.com"]
+  spec.authors       = ["PSKL"]
+  spec.email         = ["hello@pascal.cc"]
 
   spec.summary       = %q{Anonymize a database, fast}
   spec.description   = %q{Use filters on your database to obfuscate row contents.}
-  spec.homepage      = "TODO: Put your gem's website or public repo URL here."
+  spec.homepage      = ""
   spec.license       = "MIT"
 
   # Prevent pushing this gem to RubyGems.org. To allow pushes either set the 'allowed_push_host'
@@ -32,8 +32,7 @@ Gem::Specification.new do |spec|
 
   spec.add_development_dependency "bundler", "~> 1.13"
   spec.add_development_dependency "rake", "~> 10.0"
-  spec.add_development_dependency "rspec", "~> 3.0"
-  spec.add_development_dependency 'byebug', "~> 0"
-  spec.add_development_dependency 'sequel_pg', "~> 0"
-  spec.add_development_dependency 'faker', "~> 0"
+  spec.add_development_dependency 'sequel'
+  spec.add_development_dependency 'sequel_pg'
+  spec.add_development_dependency 'faker'
 end

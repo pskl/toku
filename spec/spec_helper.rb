@@ -5,6 +5,8 @@ require 'pg_tester'
 require 'sequel'
 require 'faker'
 
+Dir[File.dirname(__FILE__) + "/fixtures/sample_filters/**/*.rb"].each { |file| require file }
+
 def sequel_connection(psql)
   Sequel.postgres(
     psql.db,

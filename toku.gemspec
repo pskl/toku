@@ -6,22 +6,13 @@ require 'toku/version'
 Gem::Specification.new do |spec|
   spec.name          = "toku"
   spec.version       = Toku::VERSION
-  spec.authors       = ["PSKL"]
+  spec.authors       = ["PSKL", "lordofthelake"]
   spec.email         = ["hello@pascal.cc"]
 
   spec.summary       = %q{Anonymize a database, fast}
   spec.description   = %q{Use filters on your database to obfuscate row contents.}
   spec.homepage      = ""
   spec.license       = "MIT"
-
-  # Prevent pushing this gem to RubyGems.org. To allow pushes either set the 'allowed_push_host'
-  # to allow pushing to a single host or delete this section to allow pushing to any host.
-  if spec.respond_to?(:metadata)
-    spec.metadata['allowed_push_host'] = "TODO: Set to 'http://mygemserver.com'"
-  else
-    raise "RubyGems 2.0 or newer is required to protect against " \
-      "public gem pushes."
-  end
 
   spec.files         = `git ls-files -z`.split("\x0").reject do |f|
     f.match(%r{^(test|spec|features)/})

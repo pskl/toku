@@ -8,3 +8,11 @@ table_a:
       - faker_last_name
     email:
       - faker_email
+    created_at:
+      - none
+  rows:
+    - max_creation_date:
+       cutoff_date: 2017-01-15
+table_b:
+  rows:
+    - drop

@@ -42,8 +42,15 @@ describe Toku do
           String :last_name
           String :email
         end
+        connection.create_table :table_b do
+          primary_key :id
+          String :something
+          String :something_else
+        end
       end
       @table_a_1 = origin_connection.from(:table_a)
+      @table_b_1 = origin_connection.from(:table_b)
+      @table_b_2 = destination_connection.from(:table_b)
       @table_a_2 = destination_connection.from(:table_a)
       @table_a_1.insert(
         first_name: 'Paskal',
@@ -56,6 +63,10 @@ describe Toku do
         last_name: 'Bedo',
         email: 'paulo@bedo.lol',
         created_at: Date.parse('2017-01-03')
+      )
+      @table_b_1.insert(
+        something: 'lol',
+        something_else: 'lol_else'
       )
     end
     context 'config file mentions all columns of each table' do
@@ -82,6 +93,7 @@ describe Toku do
             email: 'michale.pechovitz@gmail.ru'
           }
         )
+        expect(@table_b_2.select.to_a).to eq []
       end
     end
 

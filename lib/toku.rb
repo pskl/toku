@@ -37,21 +37,20 @@ module Toku
       source_db.extension(:pg_streaming)
 
       source_db.tables.each do |table|
-        if @config[table.to_s]['columns'].count < source_db.from(table).columns.count
+        if !row_filters?(table) && @config[table.to_s]['columns'].count < source_db.from(table).columns.count
           raise Toku::ColumnFilterMissingError
         end
 
         row_enumerator = source_db[table].stream.to_enum
 
         @config[table.to_s]['rows'].each do |f|
-          row_filter = self.row_filters[f.keys.first.to_sym]
           if f.is_a? String
-            options = nil
+            row_filter = self.row_filters[f.to_sym].new
           elsif f.is_a? Hash
-            options = f.values.first
+            row_filter = self.row_filters[f.keys.first.to_sym].new(f.values.first)
           end
 
-          row_enumerator = row_filter.new(options).call(row_enumerator)
+          row_enumerator = row_filter.call(row_enumerator)
         end
 
         row_enumerator = row_enumerator.map { |row| transform(row, table) }
@@ -70,6 +69,10 @@ module Toku
       source_db.tables.all? do |table|
         source_db.schema(table) == destination_db.schema(table)
       end
+    end
+
+    def row_filters?(table)
+      !@config[table.to_s]['rows'].nil? && @config[table.to_s]['rows'].any?
     end
   end
 end

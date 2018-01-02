@@ -1,8 +1,8 @@
 module Toku
   class ColumnFilter
     class FakerFirstName < Toku::ColumnFilter
-      def call(_)
-        Faker::Name.first_name
+      def initialize(value, options)
+        @value = Faker::Name.first_name
       end
     end
   end

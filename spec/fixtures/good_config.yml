@@ -3,7 +3,9 @@ table_a:
     id:
       - none
     first_name:
-      - faker_first_name
+      - faker_first_name:
+          parameter1: 'something'
+          parameter2: 'something_else'
     last_name:
       - faker_last_name
     email:

@@ -45,7 +45,7 @@ module Toku
 
         @config[table.to_s]['rows'].each do |f|
           if f.is_a? String
-            row_filter = self.row_filters[f.to_sym].new
+            row_filter = self.row_filters[f.to_sym].new({})
           elsif f.is_a? Hash
             row_filter = self.row_filters[f.keys.first.to_sym].new(f.values.first)
           end
@@ -58,10 +58,21 @@ module Toku
       end
     end
 
+    # @param [Symbol] name
+    # @param [Hash] row
     # @return [String]
     def transform(row, name)
       row.map do |k, v|
-        self.column_filters[@config[name.to_s]['columns'][k.to_s].first.to_sym].new.call(v)
+        filter_params = @config[name.to_s]['columns'][k.to_s].first
+        if filter_params.is_a? Hash
+          column_filter = self.column_filters[filter_params.keys.first.to_sym].new(
+            v,
+            filter_params.values.first
+          )
+        elsif filter_params.is_a? String
+          column_filter = self.column_filters[filter_params.to_sym].new(v, {})
+        end
+        column_filter.call
       end.join(',')
     end
 

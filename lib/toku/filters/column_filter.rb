@@ -1,11 +1,12 @@
 module Toku
   class ColumnFilter
     # @param options [Hash{Symbol => Object}] arguments passed to the filter
-    def initialize(**options)
+    def initialize(value, options)
+      @value = value
     end
 
-    def call(input)
-      input
+    def call
+      @value
     end
   end
 end

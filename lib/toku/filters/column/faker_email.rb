@@ -1,8 +1,8 @@
 module Toku
   class ColumnFilter
     class FakerEmail < Toku::ColumnFilter
-      def call(_)
-        Faker::Internet.email
+      def initialize(value, options)
+        @value = Faker::Internet.email
       end
     end
   end

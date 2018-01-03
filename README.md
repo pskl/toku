@@ -29,7 +29,7 @@ Users can define custom filters by implementing a `Toku::ColumnFilter` subclass 
 ```ruby
 module Toku
   class NewFilter < Toku::ColumnFilter
-    def initialize(**options)
+    def initialize(value, options)
     end
 
     def call(_)
@@ -43,7 +43,30 @@ Which can be then referenced in the config file using the key of the mapping has
 
 ## Config file specification
 
-TODO
+Config file must look like this and specifiy for each column of each table a filter to limit any potential leak of sensitive data.
+
+```yaml
+table_a:
+  columns:
+    id:
+      - none
+    first_name:
+      - faker_first_name:
+          parameter1: 'something'
+          parameter2: 'something_else'
+    last_name:
+      - faker_last_name
+    email:
+      - faker_email
+    created_at:
+      - none
+  rows:
+    - max_creation_date:
+       cutoff_date: 2017-01-15
+table_b:
+  rows:
+    - drop
+```
 
 ## Development
 

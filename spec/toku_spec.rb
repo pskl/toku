@@ -14,23 +14,23 @@ describe Toku do
   end
 
   let(:origin_uri) do
-    "postgres://origin@localhost:6433/origin"
+    "postgres://origin@localhost:#{PG_PORT}/origin"
   end
 
   let(:destination_uri) do
-    "postgres://destination@localhost:6433/destination"
+    "postgres://destination@localhost:#{PG_PORT}/destination"
   end
 
   let!(:origin_setup) { origin_database.setup }
   let!(:destination_setup) { destination_database.setup }
   let(:config_file) {  File.expand_path('../', __FILE__) + '/fixtures/good_config.yml' }
 
-  after do
-    origin_database.teardown
-    destination_database.teardown
-  end
-
   context 'integration test' do
+    after do
+      origin_database.teardown
+      destination_database.teardown
+    end
+
     before do
       origin_connection = sequel_connection(origin_setup)
       destination_connection = sequel_connection(destination_setup)

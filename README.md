@@ -1,5 +1,11 @@
 # Toku
 
+[![Gem Version](https://badge.fury.io/rb/toku.svg)](https://rubygems.org/gems/toku)
+[![Build Status](https://travis-ci.org/LIQIDTechnology/toku.svg?branch=master)](https://travis-ci.org/LIQIDTechnology/toku)
+[![Coverage Status](https://coveralls.io/repos/github/LIQIDTechnology/toku/badge.svg?branch=master)](https://coveralls.io/github/LIQIDTechnology/toku?branch=master)
+[![Yard Docs](http://img.shields.io/badge/yard-docs-blue.svg)](http://www.rubydoc.info/gems/toku/)
+[![Documentation coverage](https://inch-ci.org/github/LIQIDTechnology/toku.svg?branch=master)](https://inch-ci.org/github/LIQIDTechnology/toku)
+
 Toku (which comes from 'Tokumei' 匿名 in Japanese) is a gem originally designed to anonymize a database in order to feed a another database with same columns but with filtered row contents.
 
 ## Installation

@@ -1,9 +1,11 @@
 $LOAD_PATH.unshift File.expand_path("../../lib", __FILE__)
-require "toku"
+require 'toku'
 require 'pry'
 require 'pg_tester'
 require 'sequel'
 require 'faker'
+
+PG_PORT=5432
 
 Dir[File.dirname(__FILE__) + "/fixtures/sample_filters/**/*.rb"].each { |file| require file }
 
@@ -24,6 +26,7 @@ def pg_db(name)
     db_name: name,
     role: name,
     user_name: name,
+    port: PG_PORT,
     data_dir: '/tmp/' + name
   })
 end

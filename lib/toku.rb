@@ -29,6 +29,7 @@ module Toku
     # @param [String] uri_db_source URI of the DB to be anonimized
     # @param [String] uri_db_destination URI of the destination DB
     def run(uri_db_source, uri_db_destination)
+
       source_db = Sequel.connect(uri_db_source)
       destination_db = Sequel.connect(uri_db_destination)
 
@@ -40,8 +41,8 @@ module Toku
         if !row_filters?(table) && @config[table.to_s]['columns'].count < source_db.from(table).columns.count
           raise Toku::ColumnFilterMissingError
         end
-
-        row_enumerator = source_db[table].stream.to_enum
+        row_enumerator = source_db[table].stream.lazy
+        destination_db[table].truncate
 
         @config[table.to_s]['rows'].each do |f|
           if f.is_a? String
@@ -55,7 +56,10 @@ module Toku
 
         row_enumerator = row_enumerator.map { |row| transform(row, table) }
         destination_db.copy_into(table, data: row_enumerator, format: :csv)
+        count = destination_db[table].count
+        puts "Toku: copied #{count} objects into #{table} #{count != 0 ? ':)' : ':|'}"
       end
+      nil
     end
 
     # @param [Symbol] name
@@ -73,7 +77,7 @@ module Toku
           column_filter = self.column_filters[filter_params.to_sym].new(v, {})
         end
         column_filter.call
-      end.join(',')
+      end.join(",") + "\n"
     end
 
     def source_schema_included?(source_db, destination_db)

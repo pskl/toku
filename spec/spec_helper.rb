@@ -4,10 +4,14 @@ require 'pry'
 require 'pg_tester'
 require 'sequel'
 require 'faker'
+require 'objspace'
+require 'coveralls'
+
+Coveralls.wear!
 
 PG_PORT=5432
 
-Dir[File.dirname(__FILE__) + "/fixtures/sample_filters/**/*.rb"].each { |file| require file }
+Dir[File.dirname(__FILE__) + "/fixtures/**/*.rb"].each { |file| require file }
 
 def sequel_connection(psql)
   Sequel.postgres(

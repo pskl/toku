@@ -1,9 +1,9 @@
 language: ruby
 rvm:
   - 2.5.0
-# before_install:
-#   - gem install bundler -v 1.13.6
-#   - sudo apt-get install postgresql
+before_install:
+  - dropdb destination --if-exists
+  - dropdb origin --if-exists
 dist: trusty
 sudo: required
 addons:

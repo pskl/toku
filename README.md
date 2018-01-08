@@ -34,10 +34,31 @@ Users can define custom filters by implementing a `Toku::ColumnFilter` subclass 
 
 ```ruby
 module Toku
-  class NewFilter < Toku::ColumnFilter
+  class ColumnFilter
+    # @param value [Object] initial value for the column
+    # @param options [Hash{String => Object}] arguments passed to the filter
     def initialize(value, options)
+      @value = value
     end
 
+    def call
+      @value
+    end
+  end
+end
+```
+
+or a `Toku::RowFilter` like so:
+
+```ruby
+module Toku
+  class RowFilter
+    # @param options [Hash{String => Object}] arguments passed to the filter
+    def initialize(options)
+    end
+
+    # @param [LazyEnumerator] stream
+    # @return [LazyEnumerator] stream
     def call(_)
       _
     end

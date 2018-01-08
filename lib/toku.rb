@@ -3,11 +3,10 @@ Dir[File.dirname(__FILE__) + "/toku/**/*.rb"].each { |file| require file }
 
 module Toku
   class Anonymizer
-
     attr_accessor :column_filters
     attr_accessor :row_filters
 
-    # A few default filters mappings
+    # A few default column filters mappings
     COLUMN_FILTER_MAP = {
       none: Toku::ColumnFilter::Passthrough,
       faker_last_name: Toku::ColumnFilter::FakerLastName,
@@ -15,6 +14,7 @@ module Toku
       faker_email: Toku::ColumnFilter::FakerEmail
     }
 
+    # A few default row filters mappings
     ROW_FILTER_MAP = {
       drop: Toku::RowFilter::Drop
     }
@@ -26,8 +26,9 @@ module Toku
       self.row_filters = row_filters.merge(ROW_FILTER_MAP)
     end
 
-    # @param [String] uri_db_source URI of the DB to be anonimized
-    # @param [String] uri_db_destination URI of the destination DB
+    # @param uri_db_source [String] uri_db_source URI of the DB to be anonimized
+    # @param uri_db_destination [String] URI of the destination DB
+    # @return [void]
     def run(uri_db_source, uri_db_destination)
 
       source_db = Sequel.connect(uri_db_source)
@@ -62,8 +63,8 @@ module Toku
       nil
     end
 
-    # @param [Symbol] name
-    # @param [Hash] row
+    # @param name [Symbol]
+    # @param row [Hash]
     # @return [String]
     def transform(row, name)
       row.map do |k, v|
@@ -80,12 +81,19 @@ module Toku
       end.join(",") + "\n"
     end
 
+    # Is the source database schema a subset of the destination database schema?
+    # @param source_db [String] URI of source database
+    # @param destination_db [String] URI of destination database
+    # @return [Boolean]
     def source_schema_included?(source_db, destination_db)
       source_db.tables.all? do |table|
         source_db.schema(table) == destination_db.schema(table)
       end
     end
 
+    # Are there row filters specified for this table?
+    # @param table [Symbol]
+    # @return [Boolean]
     def row_filters?(table)
       !@config[table.to_s]['rows'].nil? && @config[table.to_s]['rows'].any?
     end

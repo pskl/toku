@@ -34,3 +34,10 @@ def pg_db(name)
     data_dir: '/tmp/' + name
   })
 end
+
+RSpec.configure do |config|
+  config.before(:suite) do
+    system("dropdb origin")
+    system("dropdb destination")
+  end
+end

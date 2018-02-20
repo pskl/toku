@@ -7,9 +7,9 @@ namespace :toku do
     File.open(Rails.root.join('tmp').join('config.yml'), 'w') do |f|
       hash = {}
       ActiveRecord::Base.connection.tables.each do |table|
-        hash[table] = { 'columns' => {}, 'rows' => [] }
+        hash[table] = { 'columns' => {}, 'rows' => ['drop'] }
         ActiveRecord::Base.connection.columns(table).map(&:name).each do |column|
-          hash[table]['columns'][column] = ['drop']
+          hash[table]['columns'][column] = ['obfuscate']
         end
       end
       f.write(hash.to_yaml)

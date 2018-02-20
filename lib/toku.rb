@@ -14,6 +14,7 @@ module Toku
       faker_last_name: Toku::ColumnFilter::FakerLastName,
       faker_first_name: Toku::ColumnFilter::FakerFirstName,
       faker_email: Toku::ColumnFilter::FakerEmail
+      obfuscate: Toku::ColumnFilter::Obfuscate
     }
 
     # A few default row filters mappings
@@ -21,7 +22,7 @@ module Toku
       drop: Toku::RowFilter::Drop
     }
 
-    SCHEMA_DUMP_PATH = "/tmp/toku_source_schema_dump.sql"
+    SCHEMA_DUMP_PATH = "tmp/toku_source_schema_dump.sql"
 
     # @param [String] config_file_path path of config file
     def initialize(config_file_path, column_filters = {}, row_filters = {})
@@ -36,17 +37,15 @@ module Toku
     # @return [void]
     def run(uri_db_source, uri_db_destination)
       source_db = Sequel.connect(uri_db_source)
-      dump_schema(URI(uri_db_source).path.tr("/", ""))
+      dump_schema(uri_db_source)
       parsed_destination_uri = URI(uri_db_destination)
       destination_db_name = parsed_destination_uri.path.tr("/", "")
       destination_host =
-        Sequel.connect("postgres://#{parsed_destination_uri.user}:#{parsed_destination_uri.password}@#{parsed_destination_uri.host}:#{parsed_destination_uri.port}/template1")
+        Sequel.connect("postgres://#{parsed_destination_uri.user}:#{parsed_destination_uri.password}@#{parsed_destination_uri.host}:#{parsed_destination_uri.port || 5432}/template1")
       destination_host.run("DROP DATABASE IF EXISTS #{destination_db_name}")
       destination_host.run("CREATE DATABASE #{destination_db_name}")
       destination_db = Sequel.connect(uri_db_destination)
       destination_db.run(File.read(SCHEMA_DUMP_PATH))
-
-      raise Toku::SchemaMismatchError unless source_schema_included?(source_db, destination_db)
 
       source_db.tables.each do |table|
         if !row_filters?(table) && @config[table.to_s]['columns'].count < source_db.from(table).columns.count
@@ -94,18 +93,16 @@ module Toku
       end.join(",") + "\n"
     end
 
-    # Is the source database schema a subset of the destination database schema?
-    # @param source_db [String] URI of source database
-    # @param destination_db [String] URI of destination database
-    # @return [Boolean]
-    def source_schema_included?(source_db, destination_db)
-      source_db.tables.all? do |table|
-        source_db.schema(table) == destination_db.schema(table)
-      end
-    end
-
-    def dump_schema(db_name)
-      raise "Dump failed" unless system("pg_dump", "-s", "-x", "-O", "-f", SCHEMA_DUMP_PATH, "#{db_name}")
+    def dump_schema(uri)
+      host = URI(uri).host
+      password = URI(uri).password || ENV["PGPASSWORD"]
+      user = URI(uri).user
+      password = URI(uri).password
+      port = URI(uri).port || 5432
+      db_name = URI(uri).path.tr("/", "")
+      raise "pg_dump schema dump failed" unless system(
+        "PGPASSWORD=#{password} pg_dump -s -h #{host} -p #{port} -U #{user}  #{db_name} > #{SCHEMA_DUMP_PATH}"
+      )
     end
 
     # Are there row filters specified for this table?

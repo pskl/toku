@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.email         = ["hello@pascal.cc"]
 
   spec.summary       = %q{Anonymize a database, fast}
-  spec.description   = %q{Use filters on your database to obfuscate row contents.}
+  spec.description   = %q{Use row filters and column filters to make an anonymized copy of your production database.}
   spec.homepage      = ""
   spec.license       = "MIT"
 
@@ -21,9 +21,10 @@ Gem::Specification.new do |spec|
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
+  spec.add_dependency 'sequel'
+  spec.add_dependency 'sequel_pg'
+  spec.add_dependency 'faker'
+
   spec.add_development_dependency "bundler", "~> 1.13"
   spec.add_development_dependency "rake", "~> 10.0"
-  spec.add_development_dependency 'sequel'
-  spec.add_development_dependency 'sequel_pg'
-  spec.add_development_dependency 'faker'
 end

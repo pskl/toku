@@ -39,7 +39,8 @@ module Toku
       dump_schema(URI(uri_db_source).path.tr("/", ""))
       parsed_destination_uri = URI(uri_db_destination)
       destination_db_name = parsed_destination_uri.path.tr("/", "")
-      destination_host = Sequel.connect("postgres://#{parsed_destination_uri.user}@#{parsed_destination_uri.host}:#{parsed_destination_uri.port}/template1")
+      destination_host =
+        Sequel.connect("postgres://#{parsed_destination_uri.user}:#{parsed_destination_uri.password}@#{parsed_destination_uri.host}:#{parsed_destination_uri.port}/template1")
       destination_host.run("DROP DATABASE IF EXISTS #{destination_db_name}")
       destination_host.run("CREATE DATABASE #{destination_db_name}")
       destination_db = Sequel.connect(uri_db_destination)

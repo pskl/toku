@@ -1,5 +1,7 @@
 require "toku/version"
 require "uri"
+require "sequel"
+require 'sequel_pg'
 
 Dir[File.dirname(__FILE__) + "/toku/**/*.rb"].each { |file| require file }
 
@@ -13,7 +15,7 @@ module Toku
       none: Toku::ColumnFilter::Passthrough,
       faker_last_name: Toku::ColumnFilter::FakerLastName,
       faker_first_name: Toku::ColumnFilter::FakerFirstName,
-      faker_email: Toku::ColumnFilter::FakerEmail
+      faker_email: Toku::ColumnFilter::FakerEmail,
       obfuscate: Toku::ColumnFilter::Obfuscate
     }
 

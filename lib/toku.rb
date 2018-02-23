@@ -1,7 +1,7 @@
 require "toku/version"
 require "uri"
-require "sequel"
-require 'sequel_pg'
+require 'sequel'
+require 'csv'
 
 Dir[File.dirname(__FILE__) + "/toku/**/*.rb"].each { |file| require file }
 
@@ -16,7 +16,8 @@ module Toku
       faker_last_name: Toku::ColumnFilter::FakerLastName,
       faker_first_name: Toku::ColumnFilter::FakerFirstName,
       faker_email: Toku::ColumnFilter::FakerEmail,
-      obfuscate: Toku::ColumnFilter::Obfuscate
+      obfuscate: Toku::ColumnFilter::Obfuscate,
+      nullify: Toku::ColumnFilter::Nullify
     }
 
     # A few default row filters mappings
@@ -28,7 +29,7 @@ module Toku
 
     # @param [String] config_file_path path of config file
     def initialize(config_file_path, column_filters = {}, row_filters = {})
-      @config = YAML.load(File.read(config_file_path))
+      @config = YAML.load(ERB.new(File.read(config_file_path)).result)
       self.column_filters = column_filters.merge(COLUMN_FILTER_MAP)
       self.row_filters = row_filters.merge(ROW_FILTER_MAP)
       Sequel::Database.extension(:pg_streaming)
@@ -66,7 +67,9 @@ module Toku
         end
 
         row_enumerator = row_enumerator.map { |row| transform(row, table) }
+        destination_db.run("ALTER TABLE #{table} DISABLE TRIGGER ALL;")
         destination_db.copy_into(table, data: row_enumerator, format: :csv)
+        destination_db.run("ALTER TABLE #{table} ENABLE TRIGGER ALL;")
         count = destination_db[table].count
         puts "Toku: copied #{count} objects into #{table} #{count != 0 ? ':)' : ':|'}"
       end
@@ -80,19 +83,19 @@ module Toku
     # @param name [Symbol]
     # @param row [Hash]
     # @return [String]
-    def transform(row, name)
-      row.map do |k, v|
-        filter_params = @config[name.to_s]['columns'][k.to_s].first
-        if filter_params.is_a? Hash
-          column_filter = self.column_filters[filter_params.keys.first.to_sym].new(
-            v,
-            filter_params.values.first
-          )
-        elsif filter_params.is_a? String
-          column_filter = self.column_filters[filter_params.to_sym].new(v, {})
+    def transform(row, table_name)
+      row.map do |row_key, row_value|
+        @config[table_name.to_s]['columns'][row_key.to_s].inject(row_value) do |result, filter|
+          if filter.is_a? Hash
+            filter_class(column_filters, filter.keys.first.to_sym).new(
+              result,
+              filter.values.first
+            ).call
+          elsif filter.is_a? String
+            filter_class(column_filters, filter.to_sym).new(result, {}).call
+          end
         end
-        column_filter.call
-      end.join(",") + "\n"
+      end.to_csv
     end
 
     def dump_schema(uri)
@@ -105,6 +108,11 @@ module Toku
       raise "pg_dump schema dump failed" unless system(
         "PGPASSWORD=#{password} pg_dump -s -h #{host} -p #{port} -U #{user}  #{db_name} > #{SCHEMA_DUMP_PATH}"
       )
+    end
+
+    def filter_class(type, symbol)
+      raise "Please provide a filter for #{symbol}" if type[symbol].nil?
+      type[symbol]
     end
 
     # Are there row filters specified for this table?

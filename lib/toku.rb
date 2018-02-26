@@ -2,6 +2,7 @@ require "toku/version"
 require "uri"
 require 'sequel'
 require 'csv'
+require 'concurrent'
 
 Dir[File.dirname(__FILE__) + "/toku/**/*.rb"].each { |file| require file }
 
@@ -25,11 +26,14 @@ module Toku
       drop: Toku::RowFilter::Drop
     }
 
+    THREADPOOL_SIZE = (Concurrent.processor_count * 2).freeze
+
     SCHEMA_DUMP_PATH = "tmp/toku_source_schema_dump.sql"
 
     # @param [String] config_file_path path of config file
     def initialize(config_file_path, column_filters = {}, row_filters = {})
       @config = YAML.load(ERB.new(File.read(config_file_path)).result)
+      @threadpool = Concurrent::FixedThreadPool.new(THREADPOOL_SIZE)
       self.column_filters = column_filters.merge(COLUMN_FILTER_MAP)
       self.row_filters = row_filters.merge(ROW_FILTER_MAP)
       Sequel::Database.extension(:pg_streaming)
@@ -39,44 +43,41 @@ module Toku
     # @param uri_db_destination [String] URI of the destination DB
     # @return [void]
     def run(uri_db_source, uri_db_destination)
+      begin_time_stamp = Time.now
+      @global_count = 0
       source_db = Sequel.connect(uri_db_source)
       dump_schema(uri_db_source)
       parsed_destination_uri = URI(uri_db_destination)
       destination_db_name = parsed_destination_uri.path.tr("/", "")
-      destination_host =
+      destination_connection =
         Sequel.connect("postgres://#{parsed_destination_uri.user}:#{parsed_destination_uri.password}@#{parsed_destination_uri.host}:#{parsed_destination_uri.port || 5432}/template1")
-      destination_host.run("DROP DATABASE IF EXISTS #{destination_db_name}")
-      destination_host.run("CREATE DATABASE #{destination_db_name}")
+      destination_connection.run("DROP DATABASE IF EXISTS #{destination_db_name}")
+      destination_connection.run("CREATE DATABASE #{destination_db_name}")
+      destination_connection.disconnect
       destination_db = Sequel.connect(uri_db_destination)
       destination_db.run(File.read(SCHEMA_DUMP_PATH))
+      destination_pool = Sequel::ThreadedConnectionPool.new(destination_db)
+      source_pool = Sequel::ThreadedConnectionPool.new(source_db)
 
-      source_db.tables.each do |table|
-        if !row_filters?(table) && @config[table.to_s]['columns'].count < source_db.from(table).columns.count
+      source_db.tables.each do |t|
+        if !row_filters?(t) && @config[t.to_s]['columns'].count < source_db.from(t).columns.count
           raise Toku::ColumnFilterMissingError
         end
-        row_enumerator = source_db[table].stream.lazy
-
-        @config[table.to_s]['rows'].each do |f|
-          if f.is_a? String
-            row_filter = self.row_filters[f.to_sym].new({})
-          elsif f.is_a? Hash
-            row_filter = self.row_filters[f.keys.first.to_sym].new(f.values.first)
+        @threadpool.post do
+          destination_pool.hold do |destination_connection|
+            source_pool.hold do |source_connection|
+              process_table(t, source_connection.instance_variable_get(:@db), destination_connection.instance_variable_get(:@db))
+            end
           end
-
-          row_enumerator = row_filter.call(row_enumerator)
         end
-
-        row_enumerator = row_enumerator.map { |row| transform(row, table) }
-        destination_db.run("ALTER TABLE #{table} DISABLE TRIGGER ALL;")
-        destination_db.copy_into(table, data: row_enumerator, format: :csv)
-        destination_db.run("ALTER TABLE #{table} ENABLE TRIGGER ALL;")
-        count = destination_db[table].count
-        puts "Toku: copied #{count} objects into #{table} #{count != 0 ? ':)' : ':|'}"
       end
 
+      @threadpool.shutdown
+      @threadpool.wait_for_termination
       source_db.disconnect
       destination_db.disconnect
       FileUtils.rm(SCHEMA_DUMP_PATH)
+      puts "Toku: copied #{@global_count} elements in total and that took #{(Time.now - begin_time_stamp).round(2)} seconds with #{THREADPOOL_SIZE} green threads"
       nil
     end
 
@@ -98,7 +99,29 @@ module Toku
       end.to_csv
     end
 
+    def process_table(table, source_connection, destination_connection)
+      row_enumerator = source_connection[table].stream.lazy
+      @config[table.to_s]['rows'].each do |f|
+        row_filter = if f.is_a? String
+          self.row_filters[f.to_sym].new({})
+        elsif f.is_a? Hash
+          self.row_filters[f.keys.first.to_sym].new(f.values.first)
+        end
+        row_enumerator = row_filter.call(row_enumerator)
+      end
+
+      destination_connection.run("ALTER TABLE #{table} DISABLE TRIGGER ALL;")
+      destination_connection.copy_into(table, data: row_enumerator.map { |row| transform(row, table) }, format: :csv)
+      destination_connection.run("ALTER TABLE #{table} ENABLE TRIGGER ALL;")
+      count = destination_connection[table].count
+      @global_count += count
+      puts "Toku: copied #{count} objects into #{table} #{count != 0 ? ':)' : ':|'}"
+    end
+
+    # @param uri [String]
+    # @return [void]
     def dump_schema(uri)
+      FileUtils::mkdir_p 'tmp'
       host = URI(uri).host
       password = URI(uri).password || ENV["PGPASSWORD"]
       user = URI(uri).user

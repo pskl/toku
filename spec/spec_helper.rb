@@ -1,6 +1,8 @@
 $LOAD_PATH.unshift File.expand_path("../../lib", __FILE__)
-require 'toku'
+
 require 'pry'
+require 'concurrent'
+require 'toku'
 require 'pg_tester'
 require 'sequel'
 require 'faker'

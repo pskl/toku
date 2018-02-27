@@ -11,7 +11,7 @@ module Toku
     attr_accessor :column_filters
     attr_accessor :row_filters
 
-    # A few default column filters mappings
+    # Default column filters
     COLUMN_FILTER_MAP = {
       none: Toku::ColumnFilter::Passthrough,
       faker_last_name: Toku::ColumnFilter::FakerLastName,
@@ -21,7 +21,7 @@ module Toku
       nullify: Toku::ColumnFilter::Nullify
     }
 
-    # A few default row filters mappings
+    # Default row filters
     ROW_FILTER_MAP = {
       drop: Toku::RowFilter::Drop
     }
@@ -30,7 +30,7 @@ module Toku
 
     SCHEMA_DUMP_PATH = "tmp/toku_source_schema_dump.sql"
 
-    # @param [String] config_file_path path of config file
+    # @param config_file_path [String] path of config file
     def initialize(config_file_path, column_filters = {}, row_filters = {})
       @config = YAML.load(ERB.new(File.read(config_file_path)).result)
       @threadpool = Concurrent::FixedThreadPool.new(THREADPOOL_SIZE)
@@ -99,6 +99,9 @@ module Toku
       end.to_csv
     end
 
+    # @param source_connection [Sequel::Postgres::Database]
+    # @param destination_connection [Sequel::Postgres::Database]
+    # @return [void]
     def process_table(table, source_connection, destination_connection)
       row_enumerator = source_connection[table].stream.lazy
       @config[table.to_s]['rows'].each do |f|
@@ -133,6 +136,9 @@ module Toku
       )
     end
 
+    # param type [Hash]
+    # param symbol [Symbol]
+    # @return [Class]
     def filter_class(type, symbol)
       raise "Please provide a filter for #{symbol}" if type[symbol].nil?
       type[symbol]

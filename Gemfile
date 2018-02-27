@@ -5,7 +5,6 @@ gemspec
 
 group :development do
   gem 'rspec'
-  gem 'pg_tester'
   gem 'pry-byebug'
   gem 'coveralls'
   gem 'yard'

@@ -21,8 +21,10 @@ describe Toku do
     "postgres://destination@localhost:#{PG_PORT}/destination"
   end
 
+  let(:origin_connection) { Sequel.connect(origin_uri) }
+  let(:destination_connection) { Sequel.connect(destination_uri) }
+
   def setup_test_records(size)
-    origin_connection = sequel_connection(origin_setup)
     table_a_1 = origin_connection.from(:table_a)
     table_b_1 = origin_connection.from(:table_b)
     [table_a_1, table_b_1].each do |t|
@@ -63,14 +65,11 @@ describe Toku do
     origin_connection.disconnect
   end
 
-  let!(:origin_setup) { origin_database.setup }
-  let(:destination_setup) { destination_database.setup }
   let(:config_file) {  File.expand_path('../', __FILE__) + '/fixtures/good_config.yml' }
 
   context 'integration test' do
     context 'config file mentions all columns of each table' do
       before do
-        origin_connection = sequel_connection(origin_setup)
         origin_connection.create_table :table_a do
           primary_key :id
           Date :created_at
@@ -104,7 +103,6 @@ describe Toku do
         anonymizer.run(origin_uri, destination_uri)
         after = ObjectSpace.memsize_of_all
 
-        destination_connection = sequel_connection(destination_setup)
         @table_b_2 = destination_connection.from(:table_b)
         @table_a_2 = destination_connection.from(:table_a)
         expect(@table_a_2.select.to_a.size).to eq size + 1
@@ -115,6 +113,7 @@ describe Toku do
           email: 'michale.pechovitz@gmail.ru'
         )
         expect(@table_b_2.select.to_a).to eq []
+        destination_connection.disconnect
       end
     end
 

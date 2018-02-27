@@ -5,20 +5,12 @@ describe Toku do
     expect(Toku::VERSION).not_to be nil
   end
 
-  let(:origin_database) do
-    pg_db('origin')
-  end
-
-  let(:destination_database) do
-    pg_db('destination')
-  end
-
   let(:origin_uri) do
-    "postgres://origin@localhost:#{PG_PORT}/origin"
+    "postgres://pskl@localhost:#{PG_PORT}/postgres"
   end
 
   let(:destination_uri) do
-    "postgres://destination@localhost:#{PG_PORT}/destination"
+    "postgres://pskl@localhost:#{PG_PORT}/destination"
   end
 
   let(:origin_connection) { Sequel.connect(origin_uri) }

@@ -16,9 +16,11 @@ Dir[File.dirname(__FILE__) + "/fixtures/**/*.rb"].each { |file| require file }
 
 RSpec.configure do |config|
   config.before(:suite) do
-    system("dropdb origin --if-exists")
+    system("dropdb postgres --if-exists")
     system("dropdb destination --if-exists")
     system("createdb origin")
+    system("createdb postgres")
     system("createdb destination")
+    system("createuser pskl -s")
   end
 end

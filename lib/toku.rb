@@ -44,7 +44,8 @@ module Toku
     # @return [void]
     def run(uri_db_source, uri_db_destination)
       begin_time_stamp = Time.now
-      @global_count = 0
+      @global_object_count = 0
+      @tables_processed_count = 0
       source_db = Sequel.connect(uri_db_source)
       dump_schema(uri_db_source)
       parsed_destination_uri = URI(uri_db_destination)
@@ -77,7 +78,7 @@ module Toku
       source_db.disconnect
       destination_db.disconnect
       FileUtils.rm(SCHEMA_DUMP_PATH)
-      puts "Toku: copied #{@global_count} elements in total and that took #{(Time.now - begin_time_stamp).round(2)} seconds with #{THREADPOOL_SIZE} green threads"
+      puts "Toku: copied #{@global_object_count} elements accross #{@tables_processed_count} tables and that took #{(Time.now - begin_time_stamp).round(2)} seconds with #{THREADPOOL_SIZE} green threads"
       nil
     end
 
@@ -117,7 +118,8 @@ module Toku
       destination_connection.copy_into(table, data: row_enumerator.map { |row| transform(row, table) }, format: :csv)
       destination_connection.run("ALTER TABLE #{table} ENABLE TRIGGER ALL;")
       count = destination_connection[table].count
-      @global_count += count
+      @global_object_count += count
+      @tables_processed_count += 1
       puts "Toku: copied #{count} objects into #{table} #{count != 0 ? ':)' : ':|'}"
     end
 

@@ -3,7 +3,6 @@ table_a:
     id:
       - none
     first_name:
-      - none
       - faker_first_name
     last_name:
       - faker_last_name

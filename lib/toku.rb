@@ -11,17 +11,17 @@ module Toku
     attr_accessor :column_filters
     attr_accessor :row_filters
 
-    # Default column filters
     COLUMN_FILTER_MAP = {
       none: Toku::ColumnFilter::Passthrough,
       faker_last_name: Toku::ColumnFilter::FakerLastName,
       faker_first_name: Toku::ColumnFilter::FakerFirstName,
+      faker_bic: Toku::ColumnFilter::FakerBic,
+      faker_iban: Toku::ColumnFilter::FakerIban,
       faker_email: Toku::ColumnFilter::FakerEmail,
       obfuscate: Toku::ColumnFilter::Obfuscate,
       nullify: Toku::ColumnFilter::Nullify
     }
 
-    # Default row filters
     ROW_FILTER_MAP = {
       drop: Toku::RowFilter::Drop
     }
@@ -65,9 +65,9 @@ module Toku
           raise Toku::ColumnFilterMissingError
         end
         @threadpool.post do
-          destination_pool.hold do |destination_connection|
-            source_pool.hold do |source_connection|
-              process_table(t, source_connection.instance_variable_get(:@db), destination_connection.instance_variable_get(:@db))
+          destination_pool.hold do |destination_conn|
+            source_pool.hold do |source_conn|
+              process_table(t, source_conn.instance_variable_get(:@db), destination_conn.instance_variable_get(:@db))
             end
           end
         end
@@ -106,11 +106,11 @@ module Toku
     def process_table(table, source_connection, destination_connection)
       row_enumerator = source_connection[table].stream.lazy
       @config[table.to_s]['rows'].each do |f|
-        row_filter = if f.is_a? String
-          self.row_filters[f.to_sym].new({})
-        elsif f.is_a? Hash
-          self.row_filters[f.keys.first.to_sym].new(f.values.first)
-        end
+        row_filter =  if f.is_a? String
+                        self.row_filters[f.to_sym].new({})
+                      elsif f.is_a? Hash
+                        self.row_filters[f.keys.first.to_sym].new(f.values.first)
+                      end
         row_enumerator = row_filter.call(row_enumerator)
       end
 

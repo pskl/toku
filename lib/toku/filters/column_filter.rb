@@ -4,6 +4,7 @@ module Toku
     # @param options [Hash{String => Object}] arguments passed to the filter
     def initialize(value, options)
       @value = value
+      @options = options
     end
 
     def call

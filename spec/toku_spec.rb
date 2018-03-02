@@ -1,6 +1,8 @@
 require "spec_helper"
 
 describe Toku do
+  subject { Toku::Anonymizer.new(config_file) }
+
   it "has a version number" do
     expect(Toku::VERSION).not_to be nil
   end
@@ -15,48 +17,6 @@ describe Toku do
 
   let(:origin_connection) { Sequel.connect(origin_uri) }
   let(:destination_connection) { Sequel.connect(destination_uri) }
-
-  def setup_test_records(size)
-    table_a_1 = origin_connection.from(:table_a)
-    table_b_1 = origin_connection.from(:table_b)
-    [table_a_1, table_b_1].each do |t|
-      t.truncate if t.to_a.any?
-    end
-    table_a_1.insert(
-      first_name: 'Paskal',
-      last_name: 'Kamovich',
-      email: 'paskal.kamovich@gmail.ru',
-      created_at: Date.parse('2017-01-20')
-    )
-    table_a_1.insert(
-      first_name: 'Paulo',
-      last_name: 'Bedo',
-      email: 'paulo@bedo.lol',
-      created_at: Date.parse('2017-01-03')
-    )
-    table_b_1.insert(
-      something: 'lol',
-      something_else: 'lol_else'
-    )
-    table_a_1.import(
-      [
-        :created_at,
-        :first_name,
-        :last_name,
-        :email
-      ],
-      [
-        [
-          Date.parse('2017-01-31'),
-          'Anon',
-          'Anon',
-          'assange@nicaragua.fr'
-        ]
-      ] * size
-    )
-    origin_connection.disconnect
-  end
-
   let(:config_file) {  File.expand_path('../', __FILE__) + '/fixtures/good_config.yml' }
 
   context 'integration test' do
@@ -106,6 +66,7 @@ describe Toku do
         )
         expect(@table_b_2.select.to_a).to eq []
         destination_connection.disconnect
+        puts "#{after - before} bytes consumed"
       end
     end
 
@@ -113,8 +74,33 @@ describe Toku do
       let(:config_file) {  File.expand_path('../', __FILE__) + '/fixtures/bad_config.yml' }
       it 'raises Toku::FilterMissingError' do
         expect do
-          Toku::Anonymizer.new(config_file).run(origin_uri, destination_uri)
+          subject.run(origin_uri, destination_uri)
         end.to raise_error Toku::ColumnFilterMissingError
+      end
+    end
+
+    describe '#transform' do
+      let(:config_file) {  File.expand_path('../', __FILE__) + '/fixtures/good_config.yml' }
+
+      it 'sequentially instantiate and calls each filter in the filter stack and outputs a csv string' do
+        allow(Faker::Name).to receive(:first_name) { 'Michale' }
+        allow(Faker::Name).to receive(:last_name) { 'Pechovitz' }
+        allow(Faker::Internet).to receive(:email) { 'michale.pechovitz@gmail.ru' }
+        expect(Toku::ColumnFilter::Passthrough).to receive(:new).at_least(:once).and_call_original
+        expect(Toku::ColumnFilter::FakerLastName).to receive(:new).exactly(:once).and_call_original
+        expect(
+          subject.send(
+            :transform,
+            {
+              :id=>1,
+              :created_at=> Date.parse('2017-01-20'),
+              :first_name=>"Paskal",
+              :last_name=>"Kamovich",
+              :email=>"paskal.kamovich@gmail.ru"
+            },
+            :table_a
+            )
+        ).to eq "1,2017-01-20,Michale,Pechovitz,michale.pechovitz@gmail.ru\n"
       end
     end
   end

@@ -7,6 +7,7 @@ table_a:
           parameter1: 'something'
           parameter2: 'something_else'
     last_name:
+      - none
       - faker_last_name
     email:
       - faker_email
